@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+venv/
+*.egg-info/
+
+# Entorno
+.env
+*.env
+
+# Datos — no van a Git (son pesados y pueden tener info sensible)
+data/processed/
+data/raw/*.xlsx
+data/raw/*.csv
+chroma_db/
+mlflow_runs/
+
+# GCP
+service-account-key.json
+*.json.key
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb

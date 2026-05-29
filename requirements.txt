@@ -1,0 +1,33 @@
+# LLM y embeddings
+google-generativeai>=0.7.0
+google-cloud-aiplatform>=1.60.0
+
+# Base vectorial
+chromadb>=0.5.0
+
+# Backend
+flask>=3.0.0
+flask-cors>=4.0.0
+
+# Datos
+pandas>=2.0.0
+openpyxl>=3.1.0
+
+# MLOps
+mlflow>=2.13.0
+
+# Knowledge Graph
+networkx>=3.0
+
+# Utilidades
+python-dotenv>=1.0.0
+pydantic>=2.0.0
+tenacity>=8.2.0
+
+# Tests
+pytest>=8.0.0
+pytest-cov>=5.0.0
+
+# Dev
+black>=24.0.0
+ruff>=0.4.0
