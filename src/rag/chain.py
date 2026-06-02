@@ -12,6 +12,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain_core.output_parsers import StrOutputParser
+from src.cache.semantic_cache import SemanticCache
 
 load_dotenv()
 
@@ -62,26 +63,37 @@ ACCIÓN: [un paso concreto]"""),
 
 chain = prompt | llm | StrOutputParser()
 
-# ── 5. Historial en memoria ──────────────────────────────────────────
+# ── 5. Caché y historial ─────────────────────────────────────────────
 
+cache = SemanticCache()
 historial: list = []
 
 # ── 6. Función principal ─────────────────────────────────────────────
 
-def consultar(pregunta: str) -> str:
-    # Buscar contexto en ChromaDB
+def consultar(pregunta: str) -> tuple[str, bool]:
+    """
+    Ejecuta el pipeline RAG con caché semántico.
+    Devuelve (respuesta, desde_cache).
+    """
+    # 1. Buscar en caché primero
+    respuesta_cacheada = cache.buscar(pregunta)
+    if respuesta_cacheada:
+        return respuesta_cacheada, True
+
+    # 2. Si no hay caché, buscar en ChromaDB
     docs = retriever.invoke(pregunta)
     contexto = "\n".join([f"- {doc.page_content}" for doc in docs])
 
-    # Llamar al LLM con historial
+    # 3. Llamar al LLM con historial
     respuesta = chain.invoke({
         "context":   contexto,
         "historial": historial,
         "question":  pregunta,
     })
 
-    # Guardar en historial
+    # 4. Guardar en caché y historial
+    cache.guardar(pregunta, respuesta)
     historial.append(HumanMessage(content=pregunta))
     historial.append(AIMessage(content=respuesta))
 
-    return respuesta
+    return respuesta, False
