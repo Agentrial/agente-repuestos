@@ -1,29 +1,54 @@
 """
 tests/test_chromadb.py
 ----------------------
-Verifica que ChromaDB devuelve resultados relevantes.
+Verifica que ChromaDB funciona correctamente.
+Usa datos de prueba en memoria — no depende de datos reales.
 """
 
 import pytest
 import chromadb
 from sentence_transformers import SentenceTransformer
 
-@pytest.fixture(scope="module")
-def coleccion():
-    cliente = chromadb.PersistentClient(path="data/chromadb")
-    return cliente.get_collection("repuestos")
+MODEL_NAME = "paraphrase-multilingual-mpnet-base-v2"
+
+REPUESTOS_PRUEBA = [
+    "Válvula de admisión - Motor - Culata con válvulas",
+    "Tapa de válvula - Motor - Tapa de válvulas",
+    "Cárter de aceite - Motor - Cárter de aceite",
+    "Motor de arranque - Motor - Sistema de arranque",
+    "Filtro de aceite - Motor - Sistema de lubricación",
+]
+
 
 @pytest.fixture(scope="module")
 def modelo():
-    return SentenceTransformer("paraphrase-multilingual-mpnet-base-v2")
+    return SentenceTransformer(MODEL_NAME)
+
+
+@pytest.fixture(scope="module")
+def coleccion(modelo):
+    """Crea una colección ChromaDB en memoria con datos de prueba."""
+    cliente = chromadb.EphemeralClient()
+    col = cliente.create_collection(
+        name="repuestos_test",
+        metadata={"hnsw:space": "cosine"},
+    )
+    vectores = modelo.encode(REPUESTOS_PRUEBA).tolist()
+    col.add(
+        ids=[f"test_{i}" for i in range(len(REPUESTOS_PRUEBA))],
+        embeddings=vectores,
+        documents=REPUESTOS_PRUEBA,
+        metadatas=[{"descripcion": r} for r in REPUESTOS_PRUEBA],
+    )
+    return col
 
 
 def test_coleccion_tiene_repuestos(coleccion):
-    assert coleccion.count() > 0, "La colección está vacía"
+    assert coleccion.count() > 0
 
 
 def test_coleccion_tiene_cantidad_esperada(coleccion):
-    assert coleccion.count() == 602, f"Se esperaban 602 repuestos, hay {coleccion.count()}"
+    assert coleccion.count() == len(REPUESTOS_PRUEBA)
 
 
 def test_busqueda_devuelve_resultados_relevantes(coleccion, modelo):
@@ -31,9 +56,7 @@ def test_busqueda_devuelve_resultados_relevantes(coleccion, modelo):
     resultados = coleccion.query(query_embeddings=[vector], n_results=3)
     documentos = resultados["documents"][0]
     assert len(documentos) == 3
-    # Al menos uno debe mencionar válvula
-    assert any("álvula" in doc.lower() for doc in documentos), \
-        "Ningún resultado menciona válvula"
+    assert any("álvula" in doc.lower() for doc in documentos)
 
 
 def test_similitud_minima(coleccion, modelo):
