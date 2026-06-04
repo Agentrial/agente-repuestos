@@ -31,3 +31,4 @@ service-account-key.json
 mlruns/
 mlflow.db
 data/raw/
+data/cache/
