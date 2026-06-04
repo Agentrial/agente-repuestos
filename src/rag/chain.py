@@ -29,10 +29,24 @@ def _init():
     if _initialized:
         return
 
+    # 0. Descargar ChromaDB si no existe (runtime, usa HF_TOKEN del entorno)
+    from pathlib import Path
+    if not Path("data/chromadb").exists():
+        print("Descargando ChromaDB desde HuggingFace Hub...")
+        from huggingface_hub import snapshot_download
+        snapshot_download(
+            repo_id="angeldeveloper256/cotizador-chromadb",
+            repo_type="dataset",
+            local_dir="data/chromadb",
+            token=os.environ.get("HF_TOKEN"),
+        )
+        print("ChromaDB descargado.")
+
     # 1. Embeddings (instancia única compartida)
     embeddings = HuggingFaceEmbeddings(
         model_name="paraphrase-multilingual-mpnet-base-v2"
     )
+    # ... resto igual
 
     # 2. Retriever
     vectorstore = Chroma(

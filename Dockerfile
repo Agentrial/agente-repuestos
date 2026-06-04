@@ -11,12 +11,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('paraphrase-multilingual-mpnet-base-v2')"
 
-COPY scripts/download_chromadb.py ./scripts/download_chromadb.py
-
-ARG HF_TOKEN
-RUN pip install --no-cache-dir "huggingface_hub[hf_xet]" && \
-    HF_TOKEN=${HF_TOKEN} python scripts/download_chromadb.py
-
 COPY src/ ./src/
 COPY config/ ./config/
 
