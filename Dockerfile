@@ -13,15 +13,18 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('paraphrase-multilingual-mpnet-base-v2')"
 
 # Descargar ChromaDB desde HuggingFace Hub
-RUN pip install --no-cache-dir huggingface_hub[hf_xet] && \
-    python -c "\
-from huggingface_hub import snapshot_download; \
-snapshot_download( \
-    repo_id='angeldeveloper256/cotizador-chromadb', \
-    repo_type='dataset', \
-    local_dir='data/chromadb', \
-    token='${HF_TOKEN}' \
-)"
+ARG HF_TOKEN
+RUN pip install --no-cache-dir "huggingface_hub[hf_xet]" && \
+    HF_TOKEN=${HF_TOKEN} python -c "
+import os
+from huggingface_hub import snapshot_download
+snapshot_download(
+    repo_id='angeldeveloper256/cotizador-chromadb',
+    repo_type='dataset',
+    local_dir='data/chromadb',
+    token=os.environ['HF_TOKEN']
+)
+"
 
 COPY src/ ./src/
 COPY config/ ./config/
