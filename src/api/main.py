@@ -18,7 +18,7 @@ app = FastAPI(
     version="1.0.0",
 )
 
-cache = SemanticCache()
+
 
 # ── Modelos de datos ─────────────────────────────────────────────────
 
@@ -58,6 +58,10 @@ def consultar_repuesto(request: ConsultaRequest):
         session_id=request.session_id,
     )
 
+from src.rag.chain import _cache as rag_cache
+
 @app.get("/cache/stats")
 def cache_stats():
-    return cache.stats()
+    if rag_cache is None:
+        return {"entradas_en_cache": 0, "umbral_similitud": 0.85}
+    return rag_cache.stats()

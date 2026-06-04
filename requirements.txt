@@ -12,7 +12,7 @@ langchain-huggingface==1.2.2
 langchain-community==0.4.2
 
 # Embeddings
-sentence-transformers==5.5.1
+sentence-transformers==2.7.0
 
 # Base vectorial
 chromadb==1.5.9
@@ -33,3 +33,7 @@ scikit-learn==1.8.0
 # Tests
 pytest==9.0.3
 pytest-cov==7.1.0
+
+transformers==4.41.0
+tokenizers==0.19.1
+numpy==1.26.4
