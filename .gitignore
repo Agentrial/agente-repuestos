@@ -27,7 +27,8 @@ service-account-key.json
 
 # Jupyter
 .ipynb_checkpoints/
-*.ipynbdata/chromadb/
+*.ipynb
+data/chromadb/
 mlruns/
 mlflow.db
 data/raw/
