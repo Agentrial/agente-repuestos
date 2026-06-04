@@ -32,3 +32,4 @@ mlruns/
 mlflow.db
 data/raw/
 data/cache/
+data/chromadb/
