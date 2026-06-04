@@ -9,22 +9,13 @@ RUN pip install --no-cache-dir \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Descargar modelo de embeddings durante el build
 RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('paraphrase-multilingual-mpnet-base-v2')"
 
-# Descargar ChromaDB desde HuggingFace Hub
+COPY scripts/download_chromadb.py ./scripts/download_chromadb.py
+
 ARG HF_TOKEN
 RUN pip install --no-cache-dir "huggingface_hub[hf_xet]" && \
-    HF_TOKEN=${HF_TOKEN} python -c "
-import os
-from huggingface_hub import snapshot_download
-snapshot_download(
-    repo_id='angeldeveloper256/cotizador-chromadb',
-    repo_type='dataset',
-    local_dir='data/chromadb',
-    token=os.environ['HF_TOKEN']
-)
-"
+    HF_TOKEN=${HF_TOKEN} python scripts/download_chromadb.py
 
 COPY src/ ./src/
 COPY config/ ./config/
