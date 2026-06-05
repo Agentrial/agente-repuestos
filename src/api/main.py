@@ -1,7 +1,7 @@
 """
 src/api/main.py
 ---------------
-API REST para el cotizador de repuestos John Deere.
+API REST para el agente-repuestos de repuestos John Deere.
 Model serving con FastAPI.
 """
 
@@ -13,7 +13,7 @@ from src.cache.semantic_cache import SemanticCache
 # ── Inicializar app ──────────────────────────────────────────────────
 
 app = FastAPI(
-    title="Cotizador MLOps — John Deere 5090E",
+    title="Agente Repuestos — John Deere 5090E",
     description="API RAG para consultas de repuestos usando HuggingFace + ChromaDB + Gemini",
     version="1.0.0",
 )
@@ -36,7 +36,7 @@ class ConsultaResponse(BaseModel):
 @app.get("/")
 def root():
     return {
-        "servicio": "Cotizador MLOps John Deere 5090E",
+        "servicio": "Agente Repuestos John Deere 5090E",
         "version": "1.0.0",
         "estado": "activo",
     }

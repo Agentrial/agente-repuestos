@@ -1,5 +1,5 @@
 # config/prompts.yaml
-# Configuración del system prompt para el agente cotizador.
+# Configuración del system prompt para el agente agente-repuestos.
 # Modificar este archivo no requiere cambiar código.
 
 system_prompt:

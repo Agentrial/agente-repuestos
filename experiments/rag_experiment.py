@@ -28,7 +28,7 @@ coleccion = cliente.get_collection("repuestos")
 # ── Experimento MLflow ───────────────────────────────────────────────
 
 mlflow.set_tracking_uri("sqlite:///mlflow.db")
-mlflow.set_experiment("cotizador-rag")
+mlflow.set_experiment("agente-repuestos-rag")
 model_cfg = CONFIG["model"]
 N_RESULTADOS = 3
 

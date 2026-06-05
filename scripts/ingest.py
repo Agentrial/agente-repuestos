@@ -216,7 +216,7 @@ def ingest(input_path: Path, output_path: Path, strict: bool = False) -> int:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Ingesta y validación de datos brutos para cotizador-mlops.",
+        description="Ingesta y validación de datos brutos para agente-repuestos.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(

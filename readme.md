@@ -1,11 +1,11 @@
-# cotizador-mlops
+# agente-repuestos
 
 Sistema de cotización inteligente basado en un grafo de conocimiento (Knowledge Graph) que conecta servicios técnicos, síntomas, piezas y precios históricos. El pipeline de MLOps permite ingestar datos brutos, enriquecer precios y construir el grafo para alimentar modelos de predicción y cotización automática.
 
 ## Arquitectura
 
 ```
-cotizador-mlops/
+agente-repuestos/
 ├── data/
 │   ├── raw/               # CSVs / JSONs originales sin transformar
 │   ├── processed/         # Datos limpios listos para el grafo
@@ -43,12 +43,12 @@ El grafo tiene tres tipos de nodos y sus aristas:
 
 ```bash
 # Clonar el repositorio
-git clone https://github.com/Agentrial/cotizador-mlops.git
-cd cotizador-mlops
+git clone https://github.com/Agentrial/agente-repuestos.git
+cd agente-repuestos
 
 # Crear y activar entorno virtual (Python 3.14, WSL2 Ubuntu)
-python3.14 -m venv ~/proyectos/cotizador-mlops
-source ~/proyectos/cotizador-mlops/bin/activate
+python3.14 -m venv ~/proyectos/agente-repuestos
+source ~/proyectos/agente-repuestos/bin/activate
 
 # Instalar dependencias
 pip install -r requirements.txt
@@ -84,7 +84,7 @@ from src.knowledge_graph.graph_builder import KnowledgeGraphBuilder
 builder = KnowledgeGraphBuilder()
 builder.load_from_file("data/enriched/servicios_enriched.json")
 builder.build()
-builder.export("data/graph/cotizador.graphml")
+builder.export("data/graph/agente-repuestos.graphml")
 
 # Consultar el grafo
 servicios = builder.get_servicios_for_sintoma("ruido al frenar")
