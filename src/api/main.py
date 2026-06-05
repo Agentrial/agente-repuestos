@@ -50,7 +50,7 @@ def consultar_repuesto(request: ConsultaRequest):
     if not request.pregunta.strip():
         raise HTTPException(status_code=400, detail="La pregunta no puede estar vacía")
 
-    respuesta, desde_cache = consultar(request.pregunta)
+    respuesta, desde_cache = consultar(request.pregunta, request.session_id)
 
     return ConsultaResponse(
         respuesta=respuesta,

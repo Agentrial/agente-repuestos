@@ -20,7 +20,7 @@ _initialized = False
 _retriever = None
 _chain = None
 _cache = None
-_historial: list = []
+_historiales: dict = {}
 
 def _init():
     """Inicializa todos los componentes pesados una sola vez."""
@@ -89,24 +89,29 @@ ACCIÓN: [un paso concreto]"""),
 
 
 # ── Función principal ────────────────────────────────────────────────
-def consultar(pregunta: str) -> tuple[str, bool]:
+def consultar(pregunta: str, session_id: str = "default") -> tuple[str, bool]:
     _init()
 
     respuesta_cacheada = _cache.buscar(pregunta)
     if respuesta_cacheada:
         return respuesta_cacheada, True
 
+    # Obtener o crear historial para esta sesión
+    if session_id not in _historiales:
+        _historiales[session_id] = []
+    historial = _historiales[session_id]
+
     docs = _retriever.invoke(pregunta)
     contexto = "\n".join([f"- {doc.page_content}" for doc in docs])
 
     respuesta = _chain.invoke({
         "context":   contexto,
-        "historial": _historial,
+        "historial": historial,
         "question":  pregunta,
     })
 
     _cache.guardar(pregunta, respuesta)
-    _historial.append(HumanMessage(content=pregunta))
-    _historial.append(AIMessage(content=respuesta))
+    historial.append(HumanMessage(content=pregunta))
+    historial.append(AIMessage(content=respuesta))
 
     return respuesta, False
