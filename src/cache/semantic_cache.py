@@ -2,6 +2,7 @@
 src/cache/semantic_cache.py
 """
 import chromadb
+import uuid
 
 UMBRAL_SIMILITUD = 0.85
 
@@ -37,7 +38,7 @@ class SemanticCache:
 
     def guardar(self, consulta: str, respuesta: str) -> None:
         vector = self._encode(consulta)
-        cache_id = f"cache_{self.coleccion.count()}"
+        cache_id = f"cache_{uuid.uuid4().hex}"
         self.coleccion.add(
             ids=[cache_id],
             embeddings=[vector],
