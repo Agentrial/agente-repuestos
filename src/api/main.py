@@ -4,24 +4,27 @@ src/api/main.py
 API REST para el agente-repuestos de repuestos John Deere.
 Model serving con FastAPI.
 """
-
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from src.rag.chain import consultar
+from src.rag.chain import consultar, _init
 from src.cache.semantic_cache import SemanticCache
 
-# ── Inicializar app ──────────────────────────────────────────────────
+# ── Lifespan ─────────────────────────────────────────────────────────
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    _init()
+    yield
 
+# ── Inicializar app ──────────────────────────────────────────────────
 app = FastAPI(
     title="Agente Repuestos — John Deere 5090E",
     description="API RAG para consultas de repuestos usando HuggingFace + ChromaDB + Gemini",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
-
-
 # ── Modelos de datos ─────────────────────────────────────────────────
-
 class ConsultaRequest(BaseModel):
     pregunta: str
     session_id: str = "default"
@@ -32,7 +35,6 @@ class ConsultaResponse(BaseModel):
     session_id: str
 
 # ── Endpoints ────────────────────────────────────────────────────────
-
 @app.get("/")
 def root():
     return {
@@ -49,9 +51,7 @@ def health():
 def consultar_repuesto(request: ConsultaRequest):
     if not request.pregunta.strip():
         raise HTTPException(status_code=400, detail="La pregunta no puede estar vacía")
-
     respuesta, desde_cache = consultar(request.pregunta, request.session_id)
-
     return ConsultaResponse(
         respuesta=respuesta,
         desde_cache=desde_cache,
