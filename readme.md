@@ -1,120 +1,130 @@
-# agente-repuestos
-
-Sistema de cotización inteligente basado en un grafo de conocimiento (Knowledge Graph) que conecta servicios técnicos, síntomas, piezas y precios históricos. El pipeline de MLOps permite ingestar datos brutos, enriquecer precios y construir el grafo para alimentar modelos de predicción y cotización automática.
-
+# 🚜 Agente Repuestos — John Deere 5090E
+ 
+![CI](https://github.com/Agentrial/agente-repuestos/actions/workflows/ci.yml/badge.svg)
+![Python](https://img.shields.io/badge/python-3.11-blue)
+![HuggingFace](https://img.shields.io/badge/🤗_Spaces-running-green)
+ 
+Agente RAG que reconoce un problema mecánico y devuelve el número de pieza necesario.
+Diseñado para distribuidores de repuestos John Deere en Perú, con soporte para
+coloquialismos del español peruano ("corazón del tractor" → Motor Completo #RE557577).
+ 
+🔗 **Demo en producción:** https://angeldeveloper256-agente-repuestos.hf.space/docs
+ 
+---
+ 
+## Stack
+ 
+| Capa | Tecnología |
+|---|---|
+| Embeddings | HuggingFace `paraphrase-multilingual-mpnet-base-v2` |
+| Vector Store | ChromaDB (similitud coseno) |
+| LLM | Google Gemini 2.5 Flash Lite (swappable) |
+| RAG Pipeline | LangChain |
+| Experimentos | MLflow |
+| API | FastAPI |
+| CI/CD | GitHub Actions + pytest |
+| Deploy | HuggingFace Spaces (Docker) |
+ 
+---
+ 
 ## Arquitectura
-
+ 
+```
+Consulta usuario
+      ↓
+Caché semántico (ChromaDB) ── hit ──→ Respuesta inmediata
+      ↓ miss
+Embeddings (HuggingFace)
+      ↓
+Retrieval top-3 (ChromaDB)
+      ↓
+Prompt + contexto + historial
+      ↓
+LLM (Gemini)
+      ↓
+Respuesta + guardar en caché
+```
+ 
+**Decisiones de diseño:**
+- **Una sola instancia del modelo** compartida entre retriever y caché semántico — reduce consumo de RAM de ~840MB a ~420MB
+- **Lazy loading** — el modelo se carga en la primera consulta, no al arrancar el servidor
+- **Dataset privado en HuggingFace Hub** — los binarios de ChromaDB se descargan en runtime usando un token de mínimo privilegio
+- **Provider-agnostic** — swappear el LLM requiere cambiar una línea en `chain.py`
+---
+ 
+## Uso
+ 
+### Endpoint principal
+ 
+```bash
+curl -X POST https://angeldeveloper256-agente-repuestos.hf.space/consultar \
+  -H "Content-Type: application/json" \
+  -d '{"pregunta": "necesito el corazón del tractor"}'
+```
+ 
+### Respuesta esperada
+ 
+```json
+{
+  "respuesta": "DIAGNÓSTICO: El cliente necesita el motor del tractor.\nREPUESTOS:\n  1. Motor Completo #RE557577\nACCIÓN: Verificar disponibilidad del Motor Completo #RE557577.",
+  "desde_cache": false,
+  "session_id": "default"
+}
+```
+ 
+### Documentación interactiva (Swagger)
+ 
+```
+https://angeldeveloper256-agente-repuestos.hf.space/docs
+```
+ 
+> **Nota:** El primer request puede tardar 30-60 segundos si el Space estuvo inactivo.
+ 
+---
+ 
+## Correr localmente
+ 
+### Requisitos
+- Python 3.11
+- Docker
+- API key de Google Gemini (gratuita en [aistudio.google.com](https://aistudio.google.com))
+### Con Docker
+ 
+```bash
+docker pull angeldeveloper256/agente-repuestos:slim
+ 
+docker run -p 7860:7860 \
+  -e GEMINI_API_KEY=tu_api_key \
+  -e HF_TOKEN=tu_hf_token \
+  angeldeveloper256/agente-repuestos:slim
+```
+ 
+Luego abrí `http://localhost:7860/docs`
+ 
+---
+ 
+## Estructura
+ 
 ```
 agente-repuestos/
-├── data/
-│   ├── raw/               # CSVs / JSONs originales sin transformar
-│   ├── processed/         # Datos limpios listos para el grafo
-│   └── enriched/          # Datos con precios enriquecidos (APIs externas, inflación, etc.)
-├── scripts/
-│   ├── ingest.py          # Ingesta y validación de datos brutos
-│   └── enrich_prices.py   # Enriquecimiento de precios con fuentes externas
 ├── src/
-│   └── knowledge_graph/
-│       └── graph_builder.py  # Construcción del grafo: nodos y aristas
-├── notebooks/             # Exploración y prototipado
-├── tests/                 # Tests unitarios y de integración
-├── .env.example
-├── requirements.txt
-└── README.md
+│   ├── api/
+│   │   └── main.py           # FastAPI — endpoints
+│   ├── rag/
+│   │   └── chain.py          # Pipeline RAG con LangChain
+│   └── cache/
+│       └── semantic_cache.py # Caché semántico con ChromaDB
+├── scripts/
+│   └── load_catalog.py       # Vectoriza los 602 repuestos
+├── experiments/
+│   └── rag_experiment.py     # Experimentos MLflow
+├── config/
+│   └── prompts.yaml          # Configuración externalizada
+├── tests/
+│   └── ...                   # 7 tests con pytest
+├── Dockerfile
+└── .github/
+    └── workflows/
+        └── ci.yml            # GitHub Actions
 ```
-
-## Grafo de conocimiento
-
-El grafo tiene tres tipos de nodos y sus aristas:
-
-| Nodo       | Descripción                                      |
-|------------|--------------------------------------------------|
-| `Servicio` | Servicio técnico ofrecido (e.g. cambio de aceite)|
-| `Síntoma`  | Síntoma reportado por el cliente                 |
-| `Pieza`    | Pieza física involucrada en el servicio          |
-
-| Arista               | Origen     | Destino    | Descripción                              |
-|----------------------|------------|------------|------------------------------------------|
-| `REQUIERE_PIEZA`     | Servicio   | Pieza      | El servicio necesita esta pieza          |
-| `INDICA_SERVICIO`    | Síntoma    | Servicio   | El síntoma sugiere este servicio         |
-| `ASOCIADO_A`         | Síntoma    | Pieza      | El síntoma está relacionado con la pieza |
-
-## Instalación
-
-```bash
-# Clonar el repositorio
-git clone https://github.com/Agentrial/agente-repuestos.git
-cd agente-repuestos
-
-# Crear y activar entorno virtual (Python 3.14, WSL2 Ubuntu)
-python3.14 -m venv ~/proyectos/agente-repuestos
-source ~/proyectos/agente-repuestos/bin/activate
-
-# Instalar dependencias
-pip install -r requirements.txt
-
-# Configurar variables de entorno
-cp .env.example .env
-# Editar .env con tus credenciales
-```
-
-## Pipeline de uso
-
-### 1. Ingestar datos brutos
-
-```bash
-python scripts/ingest.py \
-  --input data/raw/servicios.csv \
-  --output data/processed/servicios_clean.json
-```
-
-### 2. Enriquecer precios
-
-```bash
-python scripts/enrich_prices.py \
-  --input data/processed/servicios_clean.json \
-  --output data/enriched/servicios_enriched.json
-```
-
-### 3. Construir el grafo
-
-```python
-from src.knowledge_graph.graph_builder import KnowledgeGraphBuilder
-
-builder = KnowledgeGraphBuilder()
-builder.load_from_file("data/enriched/servicios_enriched.json")
-builder.build()
-builder.export("data/graph/agente-repuestos.graphml")
-
-# Consultar el grafo
-servicios = builder.get_servicios_for_sintoma("ruido al frenar")
-print(servicios)
-```
-
-## Variables de entorno
-
-Ver `.env.example` para la lista completa. Las principales:
-
-| Variable              | Descripción                                    |
-|-----------------------|------------------------------------------------|
-| `NEO4J_URI`           | URI de conexión a Neo4j (opcional)             |
-| `NEO4J_USER`          | Usuario Neo4j                                  |
-| `NEO4J_PASSWORD`      | Contraseña Neo4j                               |
-| `PRICE_API_KEY`       | API key para enriquecimiento de precios        |
-| `LOG_LEVEL`           | Nivel de logging (`INFO`, `DEBUG`, `WARNING`)  |
-
-## Tests
-
-```bash
-pytest tests/ -v
-```
-
-## Contribuir
-
-1. Crear rama: `git checkout -b feat/nombre-feature`
-2. Commitear cambios con mensajes descriptivos
-3. Abrir Pull Request hacia `main`
-
-## Licencia
-
-MIT
+ 
