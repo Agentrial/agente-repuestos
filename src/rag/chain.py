@@ -12,6 +12,7 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain_core.output_parsers import StrOutputParser
 from src.cache.semantic_cache import SemanticCache
+import yaml
 
 load_dotenv()
 
@@ -28,6 +29,25 @@ def _init():
 
     if _initialized:
         return
+
+    # 0. Cargar configuración
+    with open("config/prompts.yaml", "r", encoding="utf-8") as f:
+        config = yaml.safe_load(f)
+
+    prompt_config = config["system_prompt"]
+    model_config = config["model"]
+
+    system_prompt = f"""{prompt_config['rol']}
+    Idioma: {prompt_config['idioma']}
+    Tono: {prompt_config['tono']}
+
+    Usá únicamente los siguientes repuestos del catálogo para responder:
+    {{context}}
+
+    {prompt_config['formato_respuesta']}
+
+    Restricciones:
+    {chr(10).join(f"- {r}" for r in prompt_config['restricciones'])}"""
 
     # 0. Descargar ChromaDB si no existe (runtime, usa HF_TOKEN del entorno)
     from pathlib import Path
@@ -46,7 +66,7 @@ def _init():
     embeddings = HuggingFaceEmbeddings(
         model_name="paraphrase-multilingual-mpnet-base-v2"
     )
-    # ... resto igual
+
 
     # 2. Retriever
     vectorstore = Chroma(
@@ -61,24 +81,16 @@ def _init():
 
     # 3. LLM
     llm = ChatGoogleGenerativeAI(
-        model="gemini-2.5-flash-lite",
-        google_api_key=os.getenv("GEMINI_API_KEY"),
-        temperature=0.1,
+    model=model_config["nombre"],
+    google_api_key=os.getenv("GEMINI_API_KEY"),
+    temperature=model_config["temperature"],
     )
-
     # 4. Prompt
     prompt = ChatPromptTemplate.from_messages([
-        ("system", """Eres un asistente técnico especializado en repuestos
-para tractores John Deere 5090E.
-Usá únicamente los siguientes repuestos del catálogo para responder:
-{context}
-Respondé en este formato:
-DIAGNÓSTICO: [una línea]
-REPUESTOS:
-  1. [nombre] #[numero_parte]
-ACCIÓN: [un paso concreto]"""),
+        ("system", system_prompt),
         MessagesPlaceholder(variable_name="historial"),
         ("human", "{question}"),
+
     ])
     _chain = prompt | llm | StrOutputParser()
 
