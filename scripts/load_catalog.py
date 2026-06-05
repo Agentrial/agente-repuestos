@@ -25,11 +25,13 @@ for archivo in archivos:
 # ── 2. Unir todo en un solo DataFrame ───────────────────────────────
 
 catalogo = pd.concat(dfs, ignore_index=True)
+catalogo.columns = catalogo.columns.str.strip()
+
 print(f"\nTotal antes de limpiar: {len(catalogo)} filas")
 
 # ── 3. Eliminar duplicados por Número de parte ───────────────────────
 
-catalogo = catalogo.drop_duplicates(subset=["Número de parte "])
+catalogo = catalogo.drop_duplicates(subset=["Número de parte"])
 print(f"Total después de eliminar duplicados: {len(catalogo)} filas")
 
 # ── 4. Limpiar valores nulos ─────────────────────────────────────────
@@ -86,13 +88,13 @@ coleccion = cliente.create_collection(
 )
 
 coleccion.add(
-    ids=catalogo["Número de parte "].astype(str).tolist(),
+    ids=catalogo["Número de parte"].astype(str).tolist(),
     embeddings=vectores.tolist(),
     documents=textos,
     metadatas=[
         {
-            "numero_parte": str(row["Número de parte "]),
-            "descripcion":  str(row["Descripción de la pieza "]),
+            "numero_parte": str(row["Número de parte"]),
+            "descripcion":  str(row["Descripción de la pieza"]),
             "sistema":      str(row["Sistema principal"]),
             "subsistema":   str(row["Sub sistema de pertenencia"]),
             "cantidad":     str(row["Cantidad necesaria"]),
