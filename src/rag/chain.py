@@ -138,6 +138,11 @@ def _init():
     print(f"Colecciones disponibles: {[c.name for c in vectorstore._client.list_collections()]}")
     raw = vectorstore.get(include=["documents", "metadatas"])
     print(f"Documentos recuperados por get(): {len(raw['documents'])}")
+    import os
+    for root, dirs, files in os.walk("data/chromadb"):
+        for file in files:
+            fpath = os.path.join(root, file)
+            print(f"  FILE: {fpath} ({os.path.getsize(fpath)} bytes)")
     _bm25_docs = [
         Document(page_content=text, metadata=meta)
         for text, meta in zip(raw["documents"], raw["metadatas"])
