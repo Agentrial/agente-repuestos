@@ -138,7 +138,6 @@ def _init():
     print(f"Colecciones disponibles: {[c.name for c in vectorstore._client.list_collections()]}")
     raw = vectorstore.get(include=["documents", "metadatas"])
     print(f"Documentos recuperados por get(): {len(raw['documents'])}")
-    import os
     for root, dirs, files in os.walk("data/chromadb"):
         for file in files:
             fpath = os.path.join(root, file)
