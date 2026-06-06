@@ -134,7 +134,10 @@ def _init():
     # 4. Índice BM25 — construido sobre todos los documentos de ChromaDB
     #    get() sin filtros devuelve todos los registros con sus textos
     print("Construyendo índice BM25...")
+    print(f"ChromaDB path: data/chromadb")
+    print(f"Colecciones disponibles: {[c.name for c in vectorstore._client.list_collections()]}")
     raw = vectorstore.get(include=["documents", "metadatas"])
+    print(f"Documentos recuperados por get(): {len(raw['documents'])}")
     _bm25_docs = [
         Document(page_content=text, metadata=meta)
         for text, meta in zip(raw["documents"], raw["metadatas"])
