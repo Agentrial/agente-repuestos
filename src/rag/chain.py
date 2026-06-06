@@ -121,8 +121,24 @@ def _init():
     )
  
     # 3. Vectorstore + retriever semántico
+    # El snapshot descargado de HF Hub tiene estructura anidada:
+    # local_dir="data/chromadb" + repo contiene "data/chromadb/" → data/chromadb/data/chromadb/
+    import glob as _glob
+    _chroma_candidates = [
+        "data/chromadb",
+        "data/chromadb/data/chromadb",
+    ]
+    _chroma_path = "data/chromadb"
+    for _candidate in _chroma_candidates:
+        import os as _os
+        _sqlite = _os.path.join(_candidate, "chroma.sqlite3")
+        if _os.path.exists(_sqlite) and _os.path.getsize(_sqlite) > 100000:
+            _chroma_path = _candidate
+            break
+    print(f"Usando ChromaDB path: {_chroma_path}")
+
     vectorstore = Chroma(
-        persist_directory="data/chromadb",
+        persist_directory=_chroma_path,
         embedding_function=embeddings,
         collection_name="repuestos",
     )
