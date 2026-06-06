@@ -141,9 +141,14 @@ def _init():
     ]
     # Tokenización simple: lowercase + split por espacios
     # Para números de parte como "RE504836" esto es suficiente
-    corpus_tokenizado = [doc.page_content.lower().split() for doc in _bm25_docs]
-    _bm25 = BM25Okapi(corpus_tokenizado)
-    print(f"Índice BM25 construido con {len(_bm25_docs)} documentos.")
+    corpus_tokenizado = [doc.page_content.lower().split() for doc in _bm25_docs if doc.page_content.strip()]
+    print(f"Documentos para BM25: {len(corpus_tokenizado)}")
+    if corpus_tokenizado:
+        _bm25 = BM25Okapi(corpus_tokenizado)
+        print(f"Índice BM25 construido con {len(_bm25_docs)} documentos.")
+    else:
+        _bm25 = None
+        print("WARN: corpus vacío, BM25 deshabilitado — solo búsqueda semántica.")
  
     # 5. LLM
     llm = ChatGoogleGenerativeAI(
@@ -185,17 +190,18 @@ def _buscar_hibrido(pregunta: str, n_results: int) -> list[Document]:
     docs_chroma = _retriever.invoke(pregunta)
  
     # Búsqueda BM25 — tokens de la pregunta
-    tokens = pregunta.lower().split()
-    scores_bm25 = _bm25.get_scores(tokens)
- 
-    # Construir lista ordenada BM25 (top n_results * 2 para dar margen a RRF)
-    n_candidatos = n_results * 2
-    indices_top = sorted(
-        range(len(scores_bm25)),
-        key=lambda i: scores_bm25[i],
-        reverse=True
-    )[:n_candidatos]
-    docs_bm25 = [_bm25_docs[i] for i in indices_top if scores_bm25[i] > 0]
+    if _bm25 is not None:
+        tokens = pregunta.lower().split()
+        scores_bm25 = _bm25.get_scores(tokens)
+        n_candidatos = n_results * 2
+        indices_top = sorted(
+            range(len(scores_bm25)),
+            key=lambda i: scores_bm25[i],
+            reverse=True
+        )[:n_candidatos]
+        docs_bm25 = [_bm25_docs[i] for i in indices_top if scores_bm25[i] > 0]
+    else:
+        docs_bm25 = []
  
     # Fusión RRF
     docs_fusionados = _reciprocal_rank_fusion(
